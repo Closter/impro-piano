@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Impro soul au piano</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d0d16">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Impro soul">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday : un outil d'entraînement chaleureux, comme un club soul tard le soir
+   IDEA une partition de poche posée sur le pupitre : grille en mesures + clavier annoté
+   PICTURE le clavier main droite, grand, avec les notes à jouer marquées en couleur et qui changent à chaque accord
+   COLOUR fond bordeaux nuit, touches ivoire, corail = notes sûres, or = note couleur, bleu = note bleue
+   TYPE Archivo 800 pour titres et accords, Archivo pour le texte
+   LAYOUT titre + grilles en haut, mesures + transport, clavier pleine largeur, puis accord en cours | main gauche ; sur téléphone tout s'empile */
+:root{color-scheme:dark;--bg:#1d0d16;--panel:#2a1420;--line:#4a2838;--ink:#f7ecdf;--mute:#c8afa4;--coral:#ff6a4d;--gold:#f5b83d;--blue:#4f86ff;--mauve:#a0729a;--ivory:#f6efe3;--ebony:#160d11}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(18px,3vw,36px) max(4vw,16px,env(safe-area-inset-right,0px)) clamp(18px,3vw,36px) max(4vw,16px,env(safe-area-inset-left,0px))}
+header.band{padding-top:max(clamp(18px,3vw,36px),env(safe-area-inset-top,0px))}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-weight:800;font-size:clamp(30px,5vw,46px);line-height:1.05;letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h2{font-weight:800;font-size:22px;line-height:1.15;margin:0 0 12px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 18px;max-width:60ch}
+.scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+.chip{flex:none;scroll-snap-align:start;text-align:left;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:10px 14px;min-height:44px;font:inherit;cursor:pointer}
+.chip b{display:block;font-weight:700;font-size:15px}
+.chip span{font-size:13px;color:var(--mute)}
+.chip[aria-pressed=true]{background:var(--coral);border-color:var(--coral);color:#25080f}
+.chip[aria-pressed=true] span{color:#4a1a10}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.scale{margin:14px 0 0;color:var(--mute);font-size:15px}
+.scale b{color:var(--ink)}
+.stage{background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.bars{display:grid;gap:6px;margin-bottom:14px}
+.bar{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 10px 8px;min-height:56px;color:var(--ink);font:800 20px/1 Archivo,sans-serif;text-align:left;cursor:pointer}
+.bar small{display:block;font:500 13px/1.2 Archivo,sans-serif;color:var(--mute);margin-top:4px}
+.bar.on{background:var(--coral);border-color:var(--coral);color:#25080f}
+.bar.on small{color:#4a1a10}
+.pips{position:absolute;right:8px;top:8px;display:flex;gap:3px}
+.pips i{width:6px;height:6px;border-radius:50%;background:#25080f33}
+.pips i.lit{background:#25080f}
+.transport{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+#play{min-width:120px;min-height:52px;border-radius:26px;border:0;background:var(--gold);color:#2a1606;font:800 18px Archivo,sans-serif;cursor:pointer;padding:0 22px}
+#play[aria-pressed=true]{background:var(--ink)}
+.tempo{display:flex;align-items:center;gap:10px;flex:1 1 220px}
+.tempo label{font-size:14px;color:var(--mute);white-space:nowrap}
+.tempo output{font-weight:700;white-space:nowrap;min-width:5.5em}
+input[type=range]{flex:1;accent-color:var(--coral);height:44px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.tg{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--line);background:transparent;color:var(--ink);font:500 15px Archivo,sans-serif;cursor:pointer}
+.tg[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.kbhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 20px;margin-bottom:10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--mute);margin:0;padding:0;list-style:none}
+.sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.sw.land{background:var(--coral)}.sw.scale{background:var(--mauve)}.sw.col{background:var(--gold)}.sw.blue{background:var(--blue)}.sw.tone{border:2px solid var(--coral)}
+.kb{width:100%;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.kb svg{display:block;width:100%}
+.kb .w{fill:var(--ivory);stroke:#3a1f2c;stroke-width:1}
+.kb .k{fill:var(--ebony);stroke:#000}
+.kb .hit{fill:#ffd6c9}
+.kb .k.hit{fill:#6b2a36}
+.kb .lab{fill:var(--ink);font:500 13px Archivo,sans-serif;text-anchor:middle}
+.kb circle,.kb text{pointer-events:none}
+.lower{display:grid;gap:clamp(16px,3vw,32px);grid-template-columns:minmax(0,1fr)}
+@media(min-width:820px){.lower{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:clamp(16px,2.5vw,24px)}
+.now{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:12px}
+.cname{font:800 clamp(40px,7vw,56px)/1 Archivo,sans-serif;letter-spacing:-.02em;color:var(--coral)}
+.cfr{font-size:17px;font-weight:700}
+.next{width:100%;color:var(--mute);font-size:15px}
+dl{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+dl div{border-top:1px solid var(--line);padding-top:10px}
+dt{font-size:14px;color:var(--mute)}
+dd{margin:2px 0 0;font-size:16px}
+dd b{font-weight:800}
+.tip{margin:16px 0 0;padding:14px 16px;border-radius:12px;background:var(--bg);border-left:0;font-size:16px}
+.method ol{margin:0;padding-left:1.3em;display:grid;gap:10px;max-width:70ch}
+.method li b{color:var(--gold)}
+.method .cols{display:grid;gap:24px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:820px){.method .cols{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}}
+.routine{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.routine li{display:flex;gap:12px}
+.routine b{white-space:nowrap;min-width:3.5em;color:var(--coral)}
+.note{font-size:13px;color:var(--mute);margin:18px 0 0}
+@media(max-width:600px){.bar{font-size:17px;padding:8px 8px 6px;min-height:50px}.tempo{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+  <h1>Impro soul au piano</h1>
+  <p class="sub">Choisis une grille, lance l'accompagnement et improvise avec les notes marquées sur le clavier. Elles changent à chaque accord.</p>
+  <div class="scroll" id="chips" role="group" aria-label="Grilles d'accords"></div>
+  <p class="scale" id="scale"></p>
+</div></header>
+
+<section class="band stage"><div class="wrap">
+  <div class="bars" id="bars"></div>
+  <div class="transport">
+    <button id="play" aria-pressed="false">▶ Jouer</button>
+    <div class="tempo"><label for="tempo">Tempo</label><input type="range" id="tempo" min="50" max="140" step="1"><output id="bpm"></output></div>
+    <div class="seg" id="pat" role="group" aria-label="Rythme main gauche"></div>
+    <div class="seg">
+      <button class="tg" id="swing" aria-pressed="true">Swing</button>
+      <button class="tg" id="hat" aria-pressed="true">Charleston 2 et 4</button>
+      <button class="tg" id="three" aria-pressed="false">Seulement 3 notes</button>
+    </div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap">
+  <div class="kbhead">
+    <h2>Main droite</h2>
+    <ul class="legend">
+      <li><i class="sw land"></i>Note sûre (dans l'accord)</li>
+      <li><i class="sw scale"></i>Gamme</li>
+      <li><i class="sw col"></i>Note couleur</li>
+      <li><i class="sw blue"></i>Note bleue</li>
+      <li><i class="sw tone"></i>Accord, hors gamme</li>
+    </ul>
+  </div>
+  <div class="kb" id="kbR"><svg></svg></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap lower">
+  <div class="card" id="info"></div>
+  <div class="card">
+    <h2>Main gauche</h2>
+    <div class="kb" id="kbL"><svg></svg></div>
+    <p class="tip" id="tip"></p>
+  </div>
+</div></section>
+
+<section class="band method" style="padding-top:0"><div class="wrap">
+  <div class="card cols">
+    <div>
+      <h2>La méthode</h2>
+      <ol>
+        <li><b>Peu de notes.</b> Commence avec « Seulement 3 notes ». Le rythme et les phrases comptent plus que le nombre de notes.</li>
+        <li><b>Des phrases courtes.</b> 2 temps de jeu, 2 temps de silence. Pense question, puis réponse.</li>
+        <li><b>Répète, puis varie.</b> Rejoue ton motif en changeant une seule chose : une note, le rythme ou la fin.</li>
+        <li><b>Atterris en corail.</b> Finis tes phrases sur une note sûre de l'accord en cours.</li>
+        <li><b>Glisse la note bleue.</b> Ne t'arrête pas dessus : enchaîne vers la note juste au-dessus.</li>
+        <li><b>Ajoute la couleur.</b> Quand c'est fluide, place la note dorée sur l'accord qui lui correspond.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Séance de 15 min</h2>
+      <ul class="routine">
+        <li><b>3 min</b><span>Main gauche seule, avec l'accompagnement coupé.</span></li>
+        <li><b>5 min</b><span>Main droite sur 3 notes, accompagnement lancé.</span></li>
+        <li><b>5 min</b><span>Toute la gamme, puis notes bleue et couleur.</span></li>
+        <li><b>2 min</b><span>Enregistre-toi et réécoute.</span></li>
+      </ul>
+      <p class="note">Touche les touches du clavier pour entendre les notes. Sur iPhone, désactive le mode silencieux pour avoir le son.</p>
+    </div>
+  </div>
+</div></section>
+
+<script>
+{
+const N=['Do','Do#','Ré','Mib','Mi','Fa','Fa#','Sol','Sol#','La','Sib','Si'];
+const WH=[0,2,4,5,7,9,11];
+const pcOf=m=>((m%12)+12)%12;
+const isW=m=>WH.includes(pcOf(m));
+const C={
+  Am7:{fr:'La mineur 7',tones:[9,0,4,7],v:[45,55,60],col:[11,'Si, la 9e : douce et ouverte, très soul.']},
+  D7:{fr:'Ré 7',tones:[2,6,9,0],v:[50,54,60],col:[6,'Fa#, la tierce de D7 : il colle à l\'accord.']},
+  Dm7:{fr:'Ré mineur 7',tones:[2,5,9,0],v:[50,53,60],col:[4,'Mi, la 9e : une couleur douce.']},
+  G7:{fr:'Sol 7',tones:[7,11,2,5],v:[43,53,59],col:[11,'Si, la tierce de G7 : elle tire vers Do.']},
+  Em7:{fr:'Mi mineur 7',tones:[4,7,11,2],v:[52,62,67],col:[6,'Fa#, la 9e : brillante sans être dure.']},
+  A7:{fr:'La 7',tones:[9,1,4,7],v:[57,61,67],col:[1,'Do#, la tierce de A7 : à jouer en passant, entre Do et Ré.']},
+  E7:{fr:'Mi 7',tones:[4,8,11,2],v:[52,56,62],col:[8,'Sol#, la sensible : forte tension qui veut monter sur La.']},
+  Cmaj7:{fr:'Do majeur 7',tones:[0,4,7,11],v:[48,52,59],col:[11,'Si, la 7e majeure : douce, à poser sur un temps long.']},
+  G:{fr:'Sol majeur',tones:[7,11,2],v:[43,50,59],col:[11,'Si, la tierce de Sol : à jouer à la place du Do.']},
+  Fmaj7:{fr:'Fa majeur 7',tones:[5,9,0,4],v:[41,52,57],col:[5,'Fa, la fondamentale : hors gamme, mais sonne très bien ici.']},
+  C7:{fr:'Do 7',tones:[0,4,7,10],v:[48,52,58],col:[4,'Mi, la tierce majeure : glisse du Mib vers le Mi.']},
+  F7:{fr:'Fa 7',tones:[5,9,0,3],v:[41,51,57],col:[9,'La, la tierce de F7 : douce, contraste avec le Do.']}
+};
+const PA=[9,0,2,4,7];
+const G=[
+  {title:'Vamp soul en La',tag:'2 accords',bpm:84,scale:'Pentatonique mineure de La',pcs:PA,blue:3,bars:['Am7','Am7','D7','D7'],tip:'La grille du premier exercice. Sur D7, ajoute le Fa# pour suivre l\'accord.'},
+  {title:'Ré dorien, tout en blanc',tag:'2 accords',bpm:88,scale:'Pentatonique mineure de Ré',pcs:[2,5,7,9,0],blue:8,spell:{8:'Lab'},bars:['Dm7','Dm7','G7','G7'],v:{Dm7:[50,60,65],G7:[55,59,65]},tip:'Même logique, un ton plus bas. Toutes les notes utiles sont blanches : idéal pour se lâcher.'},
+  {title:'Groove funk en Mi',tag:'2 accords',bpm:96,pat:'soul',scale:'Pentatonique mineure de Mi',pcs:[4,7,9,11,2],blue:10,bars:['Em7','A7'],tip:'Un accord par mesure, ça tourne vite. Joue court et piqué, répète des notes.'},
+  {title:'Blues mineur en La',tag:'3 accords · 12 mesures',bpm:76,scale:'Pentatonique mineure de La',pcs:PA,blue:3,bars:['Am7','Am7','Am7','Am7','Dm7','Dm7','Am7','Am7','E7','Dm7','Am7','E7'],tip:'Une seule gamme pour les 12 mesures. Sur E7, le Sol# crée la tension du retour vers La.'},
+  {title:'Soul en Do',tag:'4 accords',bpm:80,scale:'Pentatonique majeure de Do',pcs:[0,2,4,7,9],blue:3,bars:['Cmaj7','Am7','Dm7','G7'],tip:'Mêmes notes que la pentatonique mineure de La, mais Do est le centre : finis tes phrases sur Do ou Mi.'},
+  {title:'Descente soul en La',tag:'4 accords',bpm:78,scale:'Pentatonique mineure de La',pcs:PA,blue:3,bars:['Am7','G','Fmaj7','E7'],v:{E7:[40,50,56]},tip:'Les basses descendent La, Sol, Fa, Mi. Fais descendre tes fins de phrase avec elles.'},
+  {title:'Blues 12 mesures en Do',tag:'3 accords · 12 mesures',bpm:80,scale:'Pentatonique mineure de Do',pcs:[0,3,5,7,10],blue:6,spell:{6:'Solb'},bars:['C7','F7','C7','C7','F7','F7','C7','C7','G7','F7','C7','G7'],tip:'La gamme mineure sur des accords majeurs : c\'est ça, le son blues. Sur C7, glisse Mib vers Mi.'}
+];
+const PAT={charleston:{label:'Charleston',hits:[[0,1.2],[3,2.2]]},rondes:{label:'Rondes',hits:[[0,3.8]]},soul:{label:'Stabs',hits:[[0,.45],[3,.45],[6,.9]]}};
+const st={g:0,bar:0,beat:-1,playing:false,bpm:84,pat:'charleston',swing:true,hat:true,three:false};
+try{Object.assign(st,JSON.parse(localStorage.getItem('impro-soul')||'{}'),{playing:false,bar:0,beat:-1})}catch(e){}
+if(!G[st.g])st.g=0;
+const save=()=>{try{localStorage.setItem('impro-soul',JSON.stringify({g:st.g,bpm:st.bpm,pat:st.pat,swing:st.swing,hat:st.hat,three:st.three}))}catch(e){}};
+const $=s=>document.querySelector(s);
+const grid=()=>G[st.g];
+const nm=pc=>{const g=grid();return (g.spell&&g.spell[pcOf(pc)])||N[pcOf(pc)]};
+const chordAt=b=>{const g=grid(),id=g.bars[b],c=C[id];return Object.assign({id},c,{v:(g.v&&g.v[id])||c.v})};
+const three=()=>grid().pcs.slice(0,3);
+
+function renderChips(){
+  $('#chips').innerHTML=G.map((g,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===st.g}"><b>${g.title}</b><span>${g.tag}</span></button>`).join('');
+  const g=grid();
+  $('#scale').innerHTML=`Gamme : <b>${g.scale}</b> · ${g.pcs.map(nm).join(' – ')} · note bleue <b>${nm(g.blue)}</b>`;
+}
+function renderBars(){
+  const g=grid(),n=g.bars.length;
+  const el=$('#bars');el.style.gridTemplateColumns=`repeat(${Math.min(4,n)},minmax(0,1fr))`;
+  el.innerHTML=g.bars.map((id,b)=>`<button class="bar${b===st.bar?' on':''}" data-b="${b}">${id}<small>mesure ${b+1}</small>${b===st.bar&&st.playing?'<span class="pips">'+[0,1,2,3].map(k=>`<i class="${k===st.beat?'lit':''}"></i>`).join('')+'</span>':''}</button>`).join('');
+}
+function renderBeat(){
+  const p=document.querySelectorAll('.bar.on .pips i');
+  p.forEach((e,k)=>e.classList.toggle('lit',k===st.beat));
+}
+function renderInfo(){
+  const g=grid(),c=chordAt(st.bar),n=g.bars.length;
+  let nb=(st.bar+1)%n;while(g.bars[nb]===c.id&&nb!==st.bar)nb=(nb+1)%n;
+  const land=c.tones.filter(p=>g.pcs.includes(p));
+  const out=c.tones.filter(p=>!g.pcs.includes(p));
+  $('#info').innerHTML=`<div class="now"><div class="cname">${c.id}</div><div class="cfr">${c.fr}</div><div class="next">Accord suivant : <b>${g.bars[nb]}</b></div></div>
+  <dl>
+    <div><dt>Notes de l'accord</dt><dd>${c.tones.map(nm).join(' – ')}</dd></div>
+    <div><dt><i class="sw land"></i>Notes sûres pour finir une phrase</dt><dd><b>${land.map(nm).join(', ')}</b>${out.length?` · hors gamme : ${out.map(nm).join(', ')}`:''}</dd></div>
+    <div><dt><i class="sw col"></i>Note couleur</dt><dd>${c.col[1]}</dd></div>
+    <div><dt><i class="sw blue"></i>Note bleue</dt><dd><b>${nm(g.blue)}</b>, à glisser vers ${nm(g.blue+1)}.</dd></div>
+  </dl>`;
+  $('#tip').textContent=g.tip;
+}
+function markR(m){
+  const g=grid(),c=chordAt(st.bar),pc=pcOf(m);
+  if(st.three)return three().includes(pc)?(c.tones.includes(pc)?'land':'scale'):null;
+  if(pc===g.blue)return 'blue';
+  if(pc===c.col[0])return 'col';
+  if(g.pcs.includes(pc))return c.tones.includes(pc)?'land':'scale';
+  if(c.tones.includes(pc))return 'tone';
+  return null;
+}
+const COL={land:'var(--coral)',scale:'var(--mauve)',col:'var(--gold)',blue:'var(--blue)'};
+function drawKb(box,lo,hi,mark){
+  const s=box.querySelector('svg'),W=box.clientWidth;if(!W)return;
+  const wh=[];for(let m=lo;m<=hi;m++)if(isW(m))wh.push(m);
+  const kw=W/wh.length,H=Math.round(Math.min(Math.max(kw*4.4,110),220)),bw=kw*.6,bh=H*.62,lab=44;
+  const r=Math.max(5,Math.min(kw*.3,13));
+  let a='',b='',mk='',tx='';
+  wh.forEach((m,i)=>{
+    a+=`<rect class="w" data-m="${m}" x="${i*kw+.5}" y=".5" width="${kw-1}" height="${H-1}" rx="4"/>`;
+    const t=mark(m);
+    if(t){const cx=i*kw+kw/2,cy=H-r-10;
+      mk+=t==='tone'?`<circle cx="${cx}" cy="${cy}" r="${r-1.5}" fill="none" stroke="var(--coral)" stroke-width="3"/>`:`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COL[t]}"/>`;
+      tx+=`<text class="lab" x="${cx}" y="${H+18}">${nm(m)}</text>`;}
+  });
+  for(let m=lo;m<=hi;m++){if(isW(m))continue;const i=wh.indexOf(m-1);if(i<0)continue;
+    const x=(i+1)*kw-bw/2;
+    b+=`<rect class="k" data-m="${m}" x="${x}" y="0" width="${bw}" height="${bh}" rx="3"/>`;
+    const t=mark(m);
+    if(t){const cx=x+bw/2,cy=bh-Math.min(r,bw*.42)-6,rr=Math.min(r,bw*.42);
+      mk+=t==='tone'?`<circle cx="${cx}" cy="${cy}" r="${rr-1.5}" fill="none" stroke="var(--coral)" stroke-width="3"/>`:`<circle cx="${cx}" cy="${cy}" r="${rr}" fill="${COL[t]}"/>`;
+      tx+=`<text class="lab" x="${cx}" y="${H+37}">${nm(m)}</text>`;}
+  }
+  s.setAttribute('viewBox',`0 0 ${W} ${H+lab}`);s.style.height=(H+lab)+'px';
+  s.innerHTML=a+b+mk+tx;
+}
+function lhRange(){
+  const g=grid();let all=[];[...new Set(g.bars)].forEach(id=>{all=all.concat(chordAt(g.bars.indexOf(id)).v)});
+  let lo=Math.min(...all)-1,hi=Math.max(...all)+1;
+  while(!isW(lo))lo--;while(!isW(hi))hi++;
+  let n=0;for(let m=lo;m<=hi;m++)if(isW(m))n++;
+  let k=0;while(n<12){if(k++%2){hi++;while(!isW(hi))hi++}else{lo--;while(!isW(lo))lo--}n++}
+  return [lo,hi];
+}
+function drawKeys(){
+  drawKb($('#kbR'),60,83,markR);
+  const v=chordAt(st.bar).v,[lo,hi]=lhRange();
+  drawKb($('#kbL'),lo,hi,m=>v.includes(m)?'land':null);
+}
+function renderCtl(){
+  $('#tempo').value=st.bpm;$('#bpm').textContent=st.bpm+' bpm';
+  $('#pat').innerHTML=Object.entries(PAT).map(([k,p])=>`<button class="tg" data-p="${k}" aria-pressed="${k===st.pat}">${p.label}</button>`).join('');
+  $('#swing').setAttribute('aria-pressed',st.swing);$('#hat').setAttribute('aria-pressed',st.hat);$('#three').setAttribute('aria-pressed',st.three);
+  $('#play').setAttribute('aria-pressed',st.playing);$('#play').textContent=st.playing?'■ Stop':'▶ Jouer';
+}
+function renderAll(){renderChips();renderBars();renderInfo();renderCtl();drawKeys()}
+
+/* audio */
+let ac,mst,noise,timer,step=0,nextT=0,q=[];
+function ensure(){
+  if(!ac){const A=window.AudioContext||window.webkitAudioContext;ac=new A();mst=ac.createGain();mst.gain.value=.6;
+    const cp=ac.createDynamicsCompressor();mst.connect(cp);cp.connect(ac.destination);
+    const len=Math.floor(ac.sampleRate*.05);noise=ac.createBuffer(1,len,ac.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;}
+  if(ac.state==='suspended')ac.resume();
+}
+function tone(m,t,dur,vel){
+  dur=Math.max(.35,dur);const f=440*2**((m-69)/12);
+  const g=ac.createGain(),lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;
+  const o1=ac.createOscillator(),o2=ac.createOscillator(),g2=ac.createGain();
+  o1.type='triangle';o1.frequency.value=f;o2.type='sine';o2.frequency.value=f*2;g2.gain.value=.22;
+  o1.connect(lp);o2.connect(g2);g2.connect(lp);lp.connect(g);g.connect(mst);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vel,t+.008);g.gain.exponentialRampToValueAtTime(vel*.35,t+.25);g.gain.exponentialRampToValueAtTime(.0008,t+dur);
+  [o1,o2].forEach(o=>{o.start(t);o.stop(t+dur+.05)});
+}
+function hat(t,v){
+  const s=ac.createBufferSource(),hp=ac.createBiquadFilter(),g=ac.createGain();
+  s.buffer=noise;hp.type='highpass';hp.frequency.value=6500;
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);
+  s.connect(hp);hp.connect(g);g.connect(mst);s.start(t);s.stop(t+.06);
+}
+const eighth=i=>{const b=60/st.bpm,r=st.swing?.64:.5;return i%2===0?b*r:b*(1-r)};
+function sched(s,t){
+  const n=grid().bars.length,bar=Math.floor(s/8)%n,i=s%8,b=60/st.bpm;
+  if(i%2===0)q.push({t,bar,beat:i/2});
+  const c=chordAt(bar);
+  PAT[st.pat].hits.forEach(([h,d])=>{if(h===i)c.v.forEach((m,k)=>tone(m,t+k*.006,d*b,k===0?.3:.22))});
+  if(st.hat){if(i===2||i===6)hat(t,.35);else if(i%2===1)hat(t,.07)}
+}
+function tick(){while(nextT<ac.currentTime+.12){sched(step,nextT);nextT+=eighth(step%8);step++}}
+function frame(){
+  if(!st.playing)return;
+  while(q.length&&q[0].t<=ac.currentTime){const e=q.shift();
+    if(e.bar!==st.bar){st.bar=e.bar;renderBars();renderInfo();drawKeys()}
+    st.beat=e.beat;renderBeat();}
+  requestAnimationFrame(frame);
+}
+function start(){ensure();st.playing=true;step=st.bar*8;nextT=ac.currentTime+.08;q=[];st.beat=0;renderBars();tick();timer=setInterval(tick,25);renderCtl();requestAnimationFrame(frame)}
+function stop(){st.playing=false;clearInterval(timer);q=[];st.beat=-1;renderBars();renderCtl()}
+
+/* events */
+$('#chips').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(!c)return;stop();st.g=+c.dataset.i;st.bar=0;const g=grid();st.bpm=g.bpm;st.pat=g.pat||'charleston';save();renderAll()});
+$('#bars').addEventListener('click',e=>{const c=e.target.closest('[data-b]');if(!c||st.playing)return;st.bar=+c.dataset.b;renderBars();renderInfo();drawKeys()});
+$('#play').addEventListener('click',()=>{st.playing?stop():start()});
+$('#tempo').addEventListener('input',e=>{st.bpm=+e.target.value;$('#bpm').textContent=st.bpm+' bpm';save()});
+$('#pat').addEventListener('click',e=>{const c=e.target.closest('[data-p]');if(!c)return;st.pat=c.dataset.p;save();renderCtl()});
+['swing','hat','three'].forEach(k=>$('#'+k).addEventListener('click',()=>{st[k]=!st[k];save();renderCtl();if(k==='three')drawKeys()}));
+document.querySelectorAll('.kb').forEach(box=>box.addEventListener('pointerdown',e=>{
+  const r=e.target.closest('[data-m]');if(!r)return;e.preventDefault();ensure();
+  tone(+r.dataset.m,ac.currentTime+.01,1.4,.32);r.classList.add('hit');setTimeout(()=>r.classList.remove('hit'),180);
+}));
+const ro=new ResizeObserver(()=>drawKeys());
+ro.observe($('#kbR'));ro.observe($('#kbL'));
+renderAll();
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+}
+</script>
+</body>
+</html>

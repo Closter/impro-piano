@@ -1,0 +1,17 @@
+{
+  "name": "Impro soul au piano",
+  "short_name": "Impro soul",
+  "description": "Grilles d'accords, gammes et accompagnement pour improviser au piano (blues, soul).",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1d0d16",
+  "theme_color": "#1d0d16",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
