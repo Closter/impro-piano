@@ -1,6 +1,6 @@
 // Service worker : met l'app en cache pour qu'elle marche hors ligne.
 // À CHAQUE MISE À JOUR de l'app, change le numéro de version ci-dessous.
-const CACHE = 'impro-v1';
+const CACHE = 'impro-v2';
 
 const FILES = [
   './',

@@ -92,19 +92,48 @@ dd b{font-weight:800}
 .routine li{display:flex;gap:12px}
 .routine b{white-space:nowrap;min-width:3.5em;color:var(--coral)}
 .note{font-size:13px;color:var(--mute);margin:18px 0 0}
-@media(max-width:600px){.bar{font-size:17px;padding:8px 8px 6px;min-height:50px}.tempo{flex-basis:100%}}
+.lpanel{display:grid;gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.lrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+#listen{min-height:52px;border-radius:26px;border:2px solid var(--coral);background:transparent;color:var(--ink);font:800 17px Archivo,sans-serif;padding:0 22px;cursor:pointer}
+#listen[aria-pressed=true]{background:var(--coral);color:#25080f}
+.lmeter{flex:0 1 160px;height:10px;border-radius:5px;background:var(--bg);overflow:hidden}
+.lmeter i{display:block;height:100%;width:0;background:var(--mauve);border-radius:5px}
+.lmeter i.ok{background:var(--coral)}
+.lstatus{margin:0;color:var(--mute);font-size:15px}
+.lopts{display:none;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.chroma{display:none;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;height:76px}
+.cb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.cb i{display:block;width:100%;max-width:28px;min-height:2px;border-radius:3px 3px 0 0;background:var(--mauve)}
+.cb.in i{background:var(--coral)}
+.cb span{font-size:11px;color:var(--mute);white-space:nowrap}
+body.listening .lopts{display:flex}
+body.listening .chroma{display:grid}
+body.listening .bars,body.listening .transport{display:none}
+@media(max-width:600px){.bar{font-size:17px;padding:8px 8px 6px;min-height:50px}.tempo{flex-basis:100%}.lmeter{flex-basis:100px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <header class="band"><div class="wrap">
   <h1>Impro soul au piano</h1>
-  <p class="sub">Choisis une grille, lance l'accompagnement et improvise avec les notes marquées sur le clavier. Elles changent à chaque accord.</p>
+  <p class="sub">Choisis une grille et lance l'accompagnement, ou fais écouter ton piano à l'app : elle reconnaît l'accord et te montre les notes à jouer.</p>
   <div class="scroll" id="chips" role="group" aria-label="Grilles d'accords"></div>
   <p class="scale" id="scale"></p>
 </div></header>
 
 <section class="band stage"><div class="wrap">
+  <div class="lpanel">
+    <div class="lrow">
+      <button id="listen" aria-pressed="false">● Écouter mon piano</button>
+      <div class="lmeter" aria-hidden="true"><i id="lvl"></i></div>
+      <p class="lstatus" id="lstatus" role="status"></p>
+    </div>
+    <div class="lopts">
+      <button class="tg" id="lhonly" aria-pressed="true">Main gauche seulement</button>
+      <div class="tempo"><label for="sens">Sensibilité</label><input type="range" id="sens" min="1" max="10" step="1"></div>
+    </div>
+    <div class="chroma" id="chroma" aria-hidden="true"></div>
+  </div>
   <div class="bars" id="bars"></div>
   <div class="transport">
     <button id="play" aria-pressed="false">▶ Jouer</button>
@@ -162,6 +191,7 @@ dd b{font-weight:800}
         <li><b>5 min</b><span>Toute la gamme, puis notes bleue et couleur.</span></li>
         <li><b>2 min</b><span>Enregistre-toi et réécoute.</span></li>
       </ul>
+      <p class="note">Mode écoute : pose le téléphone près du piano, plaque tes accords sous le Do du milieu et tiens-les une seconde. Si la barre de niveau reste violette, monte la sensibilité.</p>
       <p class="note">Touche les touches du clavier pour entendre les notes. Sur iPhone, désactive le mode silencieux pour avoir le son.</p>
     </div>
   </div>
@@ -198,20 +228,49 @@ const G=[
   {title:'Blues 12 mesures en Do',tag:'3 accords · 12 mesures',bpm:80,scale:'Pentatonique mineure de Do',pcs:[0,3,5,7,10],blue:6,spell:{6:'Solb'},bars:['C7','F7','C7','C7','F7','F7','C7','C7','G7','F7','C7','G7'],tip:'La gamme mineure sur des accords majeurs : c\'est ça, le son blues. Sur C7, glisse Mib vers Mi.'}
 ];
 const PAT={charleston:{label:'Charleston',hits:[[0,1.2],[3,2.2]]},rondes:{label:'Rondes',hits:[[0,3.8]]},soul:{label:'Stabs',hits:[[0,.45],[3,.45],[6,.9]]}};
-const st={g:0,bar:0,beat:-1,playing:false,bpm:84,pat:'charleston',swing:true,hat:true,three:false};
-try{Object.assign(st,JSON.parse(localStorage.getItem('impro-soul')||'{}'),{playing:false,bar:0,beat:-1})}catch(e){}
+const st={g:0,bar:0,beat:-1,playing:false,bpm:84,pat:'charleston',swing:true,hat:true,three:false,listen:false,lhOnly:true,sens:5};
+try{Object.assign(st,JSON.parse(localStorage.getItem('impro-soul')||'{}'),{playing:false,bar:0,beat:-1,listen:false})}catch(e){}
 if(!G[st.g])st.g=0;
-const save=()=>{try{localStorage.setItem('impro-soul',JSON.stringify({g:st.g,bpm:st.bpm,pat:st.pat,swing:st.swing,hat:st.hat,three:st.three}))}catch(e){}};
+const save=()=>{try{localStorage.setItem('impro-soul',JSON.stringify({g:st.g,bpm:st.bpm,pat:st.pat,swing:st.swing,hat:st.hat,three:st.three,lhOnly:st.lhOnly,sens:st.sens}))}catch(e){}};
 const $=s=>document.querySelector(s);
 const grid=()=>G[st.g];
-const nm=pc=>{const g=grid();return (g.spell&&g.spell[pcOf(pc)])||N[pcOf(pc)]};
+const nm=pc=>{const g=grid();return (!st.listen&&g.spell&&g.spell[pcOf(pc)])||N[pcOf(pc)]};
 const chordAt=b=>{const g=grid(),id=g.bars[b],c=C[id];return Object.assign({id},c,{v:(g.v&&g.v[id])||c.v})};
-const three=()=>grid().pcs.slice(0,3);
+/* contexte en cours : accord de la grille, ou accord entendu au micro */
+let det=null;
+function ctx(){
+  if(st.listen&&det)return det;
+  const g=grid(),c=chordAt(st.bar);
+  return {id:c.id,fr:c.fr,tones:c.tones,v:c.v,col:c.col,pcs:g.pcs,blue:g.blue,scale:g.scale,tip:g.tip};
+}
+const three=()=>ctx().pcs.slice(0,3);
+
+/* accords reconnaissables et conseils d'impro associés */
+const EN=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const TYPES=[
+  {s:'',fr:'majeur',iv:[0,4,7]},
+  {s:'m',fr:'mineur',iv:[0,3,7]},
+  {s:'7',fr:'7',iv:[0,4,7,10]},
+  {s:'m7',fr:'mineur 7',iv:[0,3,7,10]},
+  {s:'maj7',fr:'majeur 7',iv:[0,4,7,11]}
+];
+function advice(r,t){
+  const T=TYPES[t],tones=T.iv.map(i=>pcOf(r+i)),R=N[r];
+  const base={id:EN[r]+T.s,fr:R+' '+T.fr,tones};
+  let rv=36+r;if(rv<45)rv+=12;
+  base.v=[rv,...T.iv.slice(1).map(i=>rv+i)];
+  if(T.s==='m'||T.s==='m7')return Object.assign(base,{pcs:[0,3,5,7,10].map(i=>pcOf(r+i)),blue:pcOf(r+6),col:[pcOf(r+2),`${N[pcOf(r+2)]}, la 9e : douce et ouverte, très soul.`],scale:'Pentatonique mineure de '+R,tip:`Accord mineur : la pentatonique mineure de ${R} sonne juste partout. Finis tes phrases sur ${R} ou ${N[pcOf(r+7)]}.`});
+  if(T.s==='7')return Object.assign(base,{pcs:[0,3,5,7,10].map(i=>pcOf(r+i)),blue:pcOf(r+6),col:[pcOf(r+4),`${N[pcOf(r+4)]}, la tierce majeure : glisse dessus depuis ${N[pcOf(r+3)]}.`],scale:'Pentatonique mineure de '+R+' (son blues)',tip:`Accord de 7e : la pentatonique mineure de ${R} donne le son blues. Le frottement ${N[pcOf(r+3)]} → ${N[pcOf(r+4)]} est la signature du genre.`});
+  return Object.assign(base,{pcs:[0,2,4,7,9].map(i=>pcOf(r+i)),blue:pcOf(r+3),col:[pcOf(r+11),`${N[pcOf(r+11)]}, la 7e majeure : douce, à poser sur un temps long.`],scale:'Pentatonique majeure de '+R,tip:`Accord majeur : la pentatonique majeure de ${R} sonne lumineuse. Glisse ${N[pcOf(r+3)]} vers ${N[pcOf(r+4)]} pour une touche soul.`});
+}
 
 function renderChips(){
-  $('#chips').innerHTML=G.map((g,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===st.g}"><b>${g.title}</b><span>${g.tag}</span></button>`).join('');
-  const g=grid();
-  $('#scale').innerHTML=`Gamme : <b>${g.scale}</b> · ${g.pcs.map(nm).join(' – ')} · note bleue <b>${nm(g.blue)}</b>`;
+  $('#chips').innerHTML=G.map((g,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===st.g&&!st.listen}"><b>${g.title}</b><span>${g.tag}</span></button>`).join('');
+  renderScale();
+}
+function renderScale(){
+  const k=ctx();
+  $('#scale').innerHTML=st.listen&&!det?'Mode écoute : joue un accord à la main gauche.':`Gamme : <b>${k.scale}</b> · ${k.pcs.map(nm).join(' – ')} · note bleue <b>${nm(k.blue)}</b>`;
 }
 function renderBars(){
   const g=grid(),n=g.bars.length;
@@ -223,26 +282,36 @@ function renderBeat(){
   p.forEach((e,k)=>e.classList.toggle('lit',k===st.beat));
 }
 function renderInfo(){
-  const g=grid(),c=chordAt(st.bar),n=g.bars.length;
-  let nb=(st.bar+1)%n;while(g.bars[nb]===c.id&&nb!==st.bar)nb=(nb+1)%n;
-  const land=c.tones.filter(p=>g.pcs.includes(p));
-  const out=c.tones.filter(p=>!g.pcs.includes(p));
-  $('#info').innerHTML=`<div class="now"><div class="cname">${c.id}</div><div class="cfr">${c.fr}</div><div class="next">Accord suivant : <b>${g.bars[nb]}</b></div></div>
+  if(st.listen&&!det){
+    $('#info').innerHTML=`<div class="now"><div class="cname">…</div><div class="cfr">En attente d'un accord</div><div class="next">Plaque un accord à la main gauche, sous le Do du milieu, et tiens-le une seconde.</div></div>`;
+    $('#tip').textContent='En mode écoute, seule la partie grave est analysée : ta main droite peut improviser par-dessus sans gêner la détection.';
+    renderScale();return;
+  }
+  const k=ctx();
+  let next='';
+  if(st.listen)next=`<div class="next">Accord entendu au micro${det.conf?` · fiabilité ${Math.round(det.conf*100)} %`:''}</div>`;
+  else{const g=grid(),n=g.bars.length;let nb=(st.bar+1)%n;while(g.bars[nb]===k.id&&nb!==st.bar)nb=(nb+1)%n;next=`<div class="next">Accord suivant : <b>${g.bars[nb]}</b></div>`}
+  const land=k.tones.filter(p=>k.pcs.includes(p));
+  const out=k.tones.filter(p=>!k.pcs.includes(p));
+  $('#info').innerHTML=`<div class="now"><div class="cname">${k.id}</div><div class="cfr">${k.fr}</div>${next}</div>
   <dl>
-    <div><dt>Notes de l'accord</dt><dd>${c.tones.map(nm).join(' – ')}</dd></div>
+    <div><dt>Gamme conseillée</dt><dd><b>${k.scale}</b> : ${k.pcs.map(nm).join(' – ')}</dd></div>
+    <div><dt>Notes de l'accord</dt><dd>${k.tones.map(nm).join(' – ')}</dd></div>
     <div><dt><i class="sw land"></i>Notes sûres pour finir une phrase</dt><dd><b>${land.map(nm).join(', ')}</b>${out.length?` · hors gamme : ${out.map(nm).join(', ')}`:''}</dd></div>
-    <div><dt><i class="sw col"></i>Note couleur</dt><dd>${c.col[1]}</dd></div>
-    <div><dt><i class="sw blue"></i>Note bleue</dt><dd><b>${nm(g.blue)}</b>, à glisser vers ${nm(g.blue+1)}.</dd></div>
+    <div><dt><i class="sw col"></i>Note couleur</dt><dd>${k.col[1]}</dd></div>
+    <div><dt><i class="sw blue"></i>Note bleue</dt><dd><b>${nm(k.blue)}</b>, à glisser vers ${nm(k.blue+1)}.</dd></div>
   </dl>`;
-  $('#tip').textContent=g.tip;
+  $('#tip').textContent=k.tip;
+  renderScale();
 }
 function markR(m){
-  const g=grid(),c=chordAt(st.bar),pc=pcOf(m);
-  if(st.three)return three().includes(pc)?(c.tones.includes(pc)?'land':'scale'):null;
-  if(pc===g.blue)return 'blue';
-  if(pc===c.col[0])return 'col';
-  if(g.pcs.includes(pc))return c.tones.includes(pc)?'land':'scale';
-  if(c.tones.includes(pc))return 'tone';
+  const k=ctx(),pc=pcOf(m);
+  if(st.listen&&!det)return null;
+  if(st.three)return three().includes(pc)?(k.tones.includes(pc)?'land':'scale'):null;
+  if(pc===k.blue)return 'blue';
+  if(pc===k.col[0])return 'col';
+  if(k.pcs.includes(pc))return k.tones.includes(pc)?'land':'scale';
+  if(k.tones.includes(pc))return 'tone';
   return null;
 }
 const COL={land:'var(--coral)',scale:'var(--mauve)',col:'var(--gold)',blue:'var(--blue)'};
@@ -271,6 +340,7 @@ function drawKb(box,lo,hi,mark){
   s.innerHTML=a+b+mk+tx;
 }
 function lhRange(){
+  if(st.listen)return [41,64];
   const g=grid();let all=[];[...new Set(g.bars)].forEach(id=>{all=all.concat(chordAt(g.bars.indexOf(id)).v)});
   let lo=Math.min(...all)-1,hi=Math.max(...all)+1;
   while(!isW(lo))lo--;while(!isW(hi))hi++;
@@ -280,7 +350,7 @@ function lhRange(){
 }
 function drawKeys(){
   drawKb($('#kbR'),60,83,markR);
-  const v=chordAt(st.bar).v,[lo,hi]=lhRange();
+  const v=st.listen&&!det?[]:ctx().v,[lo,hi]=lhRange();
   drawKb($('#kbL'),lo,hi,m=>v.includes(m)?'land':null);
 }
 function renderCtl(){
@@ -333,10 +403,114 @@ function frame(){
 function start(){ensure();st.playing=true;step=st.bar*8;nextT=ac.currentTime+.08;q=[];st.beat=0;renderBars();tick();timer=setInterval(tick,25);renderCtl();requestAnimationFrame(frame)}
 function stop(){st.playing=false;clearInterval(timer);q=[];st.beat=-1;renderBars();renderCtl()}
 
+/* écoute au micro : reconnaissance d'accords par chromagramme */
+const FFT=16384,STEP=90,LO=36;
+let mic=null,an=null,fbuf=null,tbuf=null,lt=null,chroma=new Array(12).fill(0),cand=null,candN=0,silentN=0;
+const hiNote=()=>st.lhOnly?60:84;
+const gate=()=>.03*.62**(st.sens-1);
+async function listenOn(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){status('Ce navigateur ne donne pas accès au micro.');return}
+  ensure();
+  try{
+    mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){status(e.name==='NotAllowedError'?'Accès au micro refusé. Autorise-le dans les réglages du navigateur, puis réessaie.':'Micro indisponible : '+e.message);return}
+  stop();
+  const src=ac.createMediaStreamSource(mic);
+  an=ac.createAnalyser();an.fftSize=FFT;an.smoothingTimeConstant=0;src.connect(an);
+  fbuf=new Float32Array(an.frequencyBinCount);tbuf=new Float32Array(2048);
+  st.listen=true;det=null;chroma.fill(0);cand=null;candN=0;
+  document.body.classList.add('listening');
+  status('À l\'écoute…');
+  lt=setInterval(analyse,STEP);
+  renderAll();renderListen();
+}
+function listenOff(){
+  clearInterval(lt);lt=null;
+  if(mic)mic.getTracks().forEach(t=>t.stop());
+  mic=null;an=null;st.listen=false;det=null;
+  document.body.classList.remove('listening');
+  status('');renderAll();renderListen();
+}
+function status(t){$('#lstatus').textContent=t}
+function analyse(){
+  if(!an)return;
+  an.getFloatTimeDomainData(tbuf);
+  let rms=0;for(const x of tbuf)rms+=x*x;rms=Math.sqrt(rms/tbuf.length);
+  $('#lvl').style.width=Math.min(100,Math.sqrt(rms/.15)*100)+'%';
+  $('#lvl').classList.toggle('ok',rms>=gate());
+  if(rms<gate()){
+    if(++silentN>4){chroma=chroma.map(c=>c*.85);cand=null;candN=0}
+    drawChroma();return;
+  }
+  silentN=0;
+  an.getFloatFrequencyData(fbuf);
+  const fr=frameChroma(fbuf,ac.sampleRate/FFT,hiNote());
+  if(!fr){drawChroma();return}
+  chroma=chroma.map((c,i)=>.55*c+.45*fr.now[i]);
+  drawChroma();
+  const best=matchChord(chroma,fr.bass);
+  if(best.sc<.62){cand=null;candN=0;return}
+  const key=best.r+'-'+best.t;
+  if(cand===key)candN++;else{cand=key;candN=1}
+  if(candN===3&&(!det||det.key!==key)){
+    det=Object.assign(advice(best.r,best.t),{key,conf:Math.min(1,best.sc)});
+    renderInfo();drawKeys();
+  }
+}
+/* spectre (dB) → énergie des 12 notes, en retirant les harmoniques 3 et 5 qui faussent l'accord */
+function frameChroma(fb,hz,hi){
+  const sal={};
+  for(let m=LO-28;m<=hi;m++){
+    const f=440*2**((m-69)/12),b0=Math.floor(f*2**(-.4/12)/hz),b1=Math.ceil(f*2**(.4/12)/hz);
+    let mx=0;for(let b=b0;b<=b1;b++){if(fb[b]<fb[b-1]||fb[b]<fb[b+1])continue;const a=10**(fb[b]/20);if(a>mx)mx=a}
+    sal[m]=mx;
+  }
+  const s={};let smax=0;
+  for(let m=LO;m<=hi;m++){
+    s[m]=Math.max(0,sal[m]-.55*(sal[m-19]||0)-.35*(sal[m-28]||0));
+    if(s[m]>smax)smax=s[m];
+  }
+  if(!smax)return null;
+  const now=new Array(12).fill(0);let bass=-1;
+  for(let m=LO;m<=hi;m++){
+    const v=s[m]/smax;if(v<.12)continue;
+    if(bass<0&&v>.35)bass=pcOf(m);
+    now[pcOf(m)]+=v;
+  }
+  const nmx=Math.max(...now)||1;
+  return {now:now.map(x=>x/nmx),bass};
+}
+/* compare l'énergie des notes aux modèles d'accords ; la basse départage les cas ambigus (Am7 / C6) */
+function matchChord(ch,bass){
+  const cn=Math.hypot(...ch)||1;
+  let best=null;
+  for(let r=0;r<12;r++)TYPES.forEach((T,t)=>{
+    let dot=0;T.iv.forEach(i=>dot+=ch[pcOf(r+i)]);
+    let sc=dot/(cn*Math.sqrt(T.iv.length));
+    if(r===bass)sc+=.07;
+    if(!best||sc>best.sc)best={r,t,sc};
+  });
+  return best;
+}
+function drawChroma(){
+  const k=det?det.tones:[];
+  $('#chroma').innerHTML=chroma.map((c,i)=>`<div class="cb${k.includes(i)?' in':''}"><i style="height:${Math.round(Math.min(1,c)*100)}%"></i><span>${N[i]}</span></div>`).join('');
+}
+function renderListen(){
+  $('#listen').setAttribute('aria-pressed',st.listen);
+  $('#listen').textContent=st.listen?'■ Arrêter l\'écoute':'● Écouter mon piano';
+  $('#lhonly').setAttribute('aria-pressed',st.lhOnly);
+  $('#sens').value=st.sens;
+  drawChroma();
+}
+$('#listen').addEventListener('click',()=>{st.listen?listenOff():listenOn()});
+$('#lhonly').addEventListener('click',()=>{st.lhOnly=!st.lhOnly;save();renderListen()});
+$('#sens').addEventListener('input',e=>{st.sens=+e.target.value;save()});
+
 /* events */
-$('#chips').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(!c)return;stop();st.g=+c.dataset.i;st.bar=0;const g=grid();st.bpm=g.bpm;st.pat=g.pat||'charleston';save();renderAll()});
+$('#chips').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(!c)return;if(st.listen)listenOff();stop();st.g=+c.dataset.i;st.bar=0;const g=grid();st.bpm=g.bpm;st.pat=g.pat||'charleston';save();renderAll()});
 $('#bars').addEventListener('click',e=>{const c=e.target.closest('[data-b]');if(!c||st.playing)return;st.bar=+c.dataset.b;renderBars();renderInfo();drawKeys()});
-$('#play').addEventListener('click',()=>{st.playing?stop():start()});
+$('#play').addEventListener('click',()=>{if(st.listen)listenOff();st.playing?stop():start()});
 $('#tempo').addEventListener('input',e=>{st.bpm=+e.target.value;$('#bpm').textContent=st.bpm+' bpm';save()});
 $('#pat').addEventListener('click',e=>{const c=e.target.closest('[data-p]');if(!c)return;st.pat=c.dataset.p;save();renderCtl()});
 ['swing','hat','three'].forEach(k=>$('#'+k).addEventListener('click',()=>{st[k]=!st[k];save();renderCtl();if(k==='three')drawKeys()}));
@@ -346,7 +520,7 @@ document.querySelectorAll('.kb').forEach(box=>box.addEventListener('pointerdown'
 }));
 const ro=new ResizeObserver(()=>drawKeys());
 ro.observe($('#kbR'));ro.observe($('#kbL'));
-renderAll();
+renderAll();renderListen();
 if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 }
 </script>
